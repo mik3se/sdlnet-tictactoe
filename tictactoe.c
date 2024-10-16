@@ -1,4 +1,5 @@
 #include "tictactoe.h"
+#include "net.h"
 
 // DIAGFORMULAX(w, pos)  ((2.0*pow(l, 2) + pow(w, 2)/4.0) * cos(M_PI_4 + atan(w/2.0*M_SQRT2*pos)))
 // DIAGFORMULAY(w, pos)  ((2.0*pow(l, 2) + pow(w, 2)/4.0) * sin(M_PI_4 + atan(w/2.0*M_SQRT2*pos)))
@@ -72,16 +73,24 @@ void DrawGame(const uint8_t* gameBoard, const uint8_t* winner){
     }
 }
 
-void UpdateBoard(uint8_t* gameBoard, const uint8_t* playingAs, uint8_t* turn, uint8_t* winner){
+int GameboardFromPacket(const uint8_t* data, uint8_t* copyto, int boardpos){
+    for(int i = 0; i < 9; i++) {
+        copyto[i] = data[boardpos + i];
+    }
+    return boardpos + 9;
+}
+
+uint8_t UpdateBoard(uint8_t* gameBoard, const uint8_t* playingAs, const uint8_t* turn, uint8_t* winner){
     for(int i = 0; i < 9; i++){
         Vector2 origin = GetOriginFromI(i);
         if(CheckCollisionPointRec(GetMousePosition(), (Rectangle){origin.x, origin.y, 232, 232})){
             if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && !gameBoard[i] && *turn == *playingAs){
                 gameBoard[i] = *playingAs;
-                *turn = *playingAs == 1 ? 2 : 1;
+                return i;
             }
         }
     }
+    return 10;
     /*if(!*winner){
         *winner = 3;
         for(int i = 0; i < 9; i++){

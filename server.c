@@ -15,18 +15,18 @@ int main(){
     uint8_t buffer[256] = { 0 };
     int dataLength[2] = {64, 64};
     uint8_t gameBoard[9] = { 0 };
-    uint8_t dcpacket[2] = {0xFF, 0x00};
+    uint8_t emptypacket = 0x00;
 
     for(int i = 0; i < MAX_SOCKETS; i++){
         clientArray[i].socket = NULL;
         clientArray[i].ready = false;
-        clientArray[i].username[0] = 0;
+        memset(clientArray[i].username, 0, 64);
     }
 
+    srand(time(NULL));
     InitSDLNet();
     InitNetServer(&serverSocket, &ip);
-    SDLNet_SocketSet socketSet = NULL;
-    socketSet = SDLNet_AllocSocketSet(MAX_SOCKETS + 1);
+    SDLNet_SocketSet socketSet = SDLNet_AllocSocketSet(MAX_SOCKETS + 1);
     if(socketSet == NULL){
         fprintf(stderr, "SDLNet_AllocSocketSet: %s\n", SDLNet_GetError());
         return 1;
@@ -37,18 +37,20 @@ int main(){
     }
 
     while(!shouldQuit){
-        readyCount = SDLNet_CheckSockets(socketSet, 1);
+        readyCount = SDLNet_CheckSockets(socketSet, 0);
         if(readyCount > 0){
             for(int i = 0; i < MAX_SOCKETS; i++){
                 if(SDLNet_SocketReady(clientArray[i].socket)){
+                    memset(buffer, 0, 256);
                     if(RecvLPacket(clientArray[i].socket, buffer, 256) <= 0){ // prevents program from accessing uninitialized memory
                         RemoveClient(&socketSet, &clientArray[i].socket, &clientCount);
                         gameState = 0;
                         clientArray[i].ready = false;
+                        memset(clientArray[i].username, 0, 64);
                         printf("A client disconnected\n");
                         for(int j = 0; j < MAX_SOCKETS; j++){
                             if(clientArray[j].socket){
-                                SendLPacket(clientArray[j].socket,  dcpacket, 2);
+                                SendTPacket(clientArray[j].socket, &emptypacket, 1, 0xFF);
                             }
                         }
                         printf("A client disconnected\n");
@@ -64,28 +66,35 @@ int main(){
                             clientArray[i].ready = true;
                         }
                         else if(gameState == 1){
-                            if(buffer[1] == 0){
+                            if(buffer[1] == 0x00){
                                 if(!gameBoard[buffer[2]]){
+                                    printf("Player %d moved at %d\n", clientArray[i].playerID, buffer[2]);
                                     gameBoard[buffer[2]] = clientArray[i].playerID;
-                                    for(int j = 0; j < MAX_SOCKETS; j++){
-                                        SendLPacket(clientArray[j].socket, gameBoard, 9);
-                                    }
+                                    SendTPacket(clientArray[(i+1)%2].socket, gameBoard, 9, 0x00);
+                                    SendTPacket(clientArray[i].socket, &emptypacket, 1, 0x01);
+                                }
+                                else{
+                                    printf("Invalid move %d from player %d\n", buffer[2], clientArray[i].playerID);
+                                    SendTPacket(clientArray[i].socket, &emptypacket, 1, 0x02);
                                 }
                             }
                         }
                     }
-                    memset(buffer, 0, 256);
                 }
                 else if(SDLNet_SocketReady(socketSet) && !clientArray[i].socket){
                     //printf("Adding a new client\n");
                     AddClient(&socketSet, &clientArray[i].socket, &serverSocket, &clientCount);
                 }
                 if(gameState == 0 && clientArray[0].ready && clientArray[1].ready){
+                    clientArray[0].playerID = (rand() % 2) + 1;
+                    clientArray[1].playerID = (clientArray[0].playerID % 2) + 1;
                     for(int j = 0; j < MAX_SOCKETS; j++){
                         memset(buffer, 0, 256);
-                        StringToPacket(clientArray[(j+1)%2].username, StringLength(clientArray[i].username, 64), buffer, 0, 256);
+                        buffer[0] = clientArray[j].playerID;
+                        StringToPacket(clientArray[(j+1)%2].username, StringLength(clientArray[(j+1)%2].username, 64), buffer, 1, 256);
                         SendTPacket(clientArray[j].socket, buffer, 64, 0x01);
                     }
+                    memset(gameBoard, 0, 9);
                     gameState = 1;
                 }
             }

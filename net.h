@@ -13,7 +13,7 @@ typedef struct {
     char username[64];
     bool online;
     bool ready;
-    int playerID;
+    uint8_t playerID;
 }Client;
 
 void InitSDLNet();
