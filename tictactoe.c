@@ -37,6 +37,26 @@ void DrawHoverHighlight(const uint8_t* gameBoard, const uint8_t* playingAs, cons
     }
 }
 
+void DrawRematchButton(int* requestRematch){
+    Rectangle button = {0, 480, (float)(40 + MeasureText("Rematch?", 60)), 100};
+    button.x = 360 - button.width/2;
+    if(*requestRematch == 0){
+        if(CheckCollisionPointRec(GetMousePosition(), button) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)){
+            *requestRematch = 1;
+        }
+        if(CheckCollisionPointRec(GetMousePosition(), button) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
+            DrawRectangleRec(button, DARKGRAY);
+        }
+        else{
+            DrawRectangleRec(button, LIGHTGRAY);
+        }
+    }
+    else{
+        DrawRectangleRec(button, GRAY);
+    }
+    DrawText("Rematch?", button.x + 20, button.y + 20, 60, WHITE);
+}
+
 void DrawGame(const uint8_t* gameBoard, const uint8_t* winner){
     for(int i = 0; i < 9; i++){
         if(gameBoard[i] == 1){
@@ -91,32 +111,6 @@ uint8_t UpdateBoard(uint8_t* gameBoard, const uint8_t* playingAs, const uint8_t*
         }
     }
     return 10;
-    /*if(!*winner){
-        *winner = 3;
-        for(int i = 0; i < 9; i++){
-            if(!gameBoard[i]){
-                *winner = 0;
-                break;
-            }
-        }
-        for(int i = 0; i < 3; i++){
-            if(gameBoard[i*3] && gameBoard[i*3] == gameBoard[i*3+1] && gameBoard[i*3] == gameBoard[i*3+2]){
-                *winner = gameBoard[i*3];
-            }
-            if(gameBoard[i] && gameBoard[i] == gameBoard[i+3] && gameBoard[i] == gameBoard[i+6]){
-                *winner = gameBoard[i];
-            }
-        }
-        if(gameBoard[0] && gameBoard[0] == gameBoard[4] && gameBoard[0] == gameBoard[8]){
-            *winner = gameBoard[0];
-        }
-        if(gameBoard[2] && gameBoard[2] == gameBoard[4] && gameBoard[2] == gameBoard[6]){
-            *winner = gameBoard[2];
-        }
-    }
-    if(*winner){
-        *turn = 0;
-    }*/
 }
 
 Vector2 GetOriginFromI(int iterator){

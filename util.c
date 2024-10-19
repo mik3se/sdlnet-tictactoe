@@ -1,8 +1,6 @@
 //
 // Created by Michael Reyes on 9/24/24.
 //
-
-#include <stdint.h>
 #include "util.h"
 
 void StripUsernameC(char* copyTo, const char* data){

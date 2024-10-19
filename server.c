@@ -1,40 +1,27 @@
 #include <stdio.h>
-#include "net.h"
 #include "util.h"
+#include "serverutils.h"
+
 
 int main(){
     Client clientArray[MAX_SOCKETS];
     TCPsocket serverSocket;
     IPaddress ip;
+    SDLNet_SocketSet socketSet;
 
+    const uint8_t emptypacket = 0x00;
     bool shouldQuit = false;
-    int clientCount = 0;
-    int readyCount = 0;
-    int gameState = 0;
-    int gameStateBuffer = 0;
+    int clientCount = 0, readyCount = 0, gameState = 0;
+    uint8_t winner = 0;
     uint8_t buffer[256] = { 0 };
-    int dataLength[2] = {64, 64};
     uint8_t gameBoard[9] = { 0 };
-    uint8_t emptypacket = 0x00;
-
-    for(int i = 0; i < MAX_SOCKETS; i++){
-        clientArray[i].socket = NULL;
-        clientArray[i].ready = false;
-        memset(clientArray[i].username, 0, 64);
-    }
 
     srand(time(NULL));
+
+    ResetClientArray(clientArray, MAX_SOCKETS);
     InitSDLNet();
     InitNetServer(&serverSocket, &ip);
-    SDLNet_SocketSet socketSet = SDLNet_AllocSocketSet(MAX_SOCKETS + 1);
-    if(socketSet == NULL){
-        fprintf(stderr, "SDLNet_AllocSocketSet: %s\n", SDLNet_GetError());
-        return 1;
-    }
-    if(SDLNet_TCP_AddSocket(socketSet, serverSocket) < 0){
-        fprintf(stderr, "SDLNet_TCP_AddSocket: %s\n", SDLNet_GetError());
-        return 1;
-    }
+    InitSocketSet(&socketSet, &serverSocket, MAX_SOCKETS + 1);
 
     while(!shouldQuit){
         readyCount = SDLNet_CheckSockets(socketSet, 0);
@@ -46,8 +33,10 @@ int main(){
                         RemoveClient(&socketSet, &clientArray[i].socket, &clientCount);
                         gameState = 0;
                         clientArray[i].ready = false;
+                        if(clientArray[(i+1)%2].socket && !clientArray[(i+1)%2].ready){
+                            clientArray[(i+1)%2].ready = true;
+                        }
                         memset(clientArray[i].username, 0, 64);
-                        printf("A client disconnected\n");
                         for(int j = 0; j < MAX_SOCKETS; j++){
                             if(clientArray[j].socket){
                                 SendTPacket(clientArray[j].socket, &emptypacket, 1, 0xFF);
@@ -78,14 +67,28 @@ int main(){
                                     SendTPacket(clientArray[i].socket, &emptypacket, 1, 0x02);
                                 }
                             }
+                            winner = CheckWinner(gameBoard);
+                            if(winner){
+                                for(int j = 0; j < MAX_SOCKETS; j++){
+                                    SendTPacket(clientArray[j].socket, &winner, 1, 0x03);
+                                    clientArray[j].ready = false;
+                                }
+                                gameState = 2;
+                            }
+                        }
+                        else {
+                            if(buffer[1] == 0x00){
+                                printf("Rematch requested by player %d\n", clientArray[i].playerID);
+                                clientArray[i].ready = true;
+                            }
                         }
                     }
                 }
                 else if(SDLNet_SocketReady(socketSet) && !clientArray[i].socket){
-                    //printf("Adding a new client\n");
                     AddClient(&socketSet, &clientArray[i].socket, &serverSocket, &clientCount);
                 }
                 if(gameState == 0 && clientArray[0].ready && clientArray[1].ready){
+                    printf("Trying to start game\n");
                     clientArray[0].playerID = (rand() % 2) + 1;
                     clientArray[1].playerID = (clientArray[0].playerID % 2) + 1;
                     for(int j = 0; j < MAX_SOCKETS; j++){
@@ -93,6 +96,16 @@ int main(){
                         buffer[0] = clientArray[j].playerID;
                         StringToPacket(clientArray[(j+1)%2].username, StringLength(clientArray[(j+1)%2].username, 64), buffer, 1, 256);
                         SendTPacket(clientArray[j].socket, buffer, 64, 0x01);
+                    }
+                    memset(gameBoard, 0, 9);
+                    gameState = 1;
+                    printf("Game has started\n");
+                }
+                else if(gameState == 2 && clientArray[0].ready && clientArray[1].ready){
+                    clientArray[0].playerID = (rand() % 2) + 1;
+                    clientArray[1].playerID = (clientArray[0].playerID % 2) + 1;
+                    for(int j = 0; j < MAX_SOCKETS; j++){
+                        SendTPacket(clientArray[j].socket, &clientArray[j].playerID, 1, 0x00);
                     }
                     memset(gameBoard, 0, 9);
                     gameState = 1;
