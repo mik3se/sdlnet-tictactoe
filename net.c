@@ -6,21 +6,22 @@
 
 void InitSDLNet(){
     if (SDLNet_Init() == -1) {
-        printf("SDLNet_Init: %s\n", SDLNet_GetError());
+        fprintf(stderr, "SDLNet_Init: %s\n", SDLNet_GetError());
         exit(2);
     }
 }
 
-void InitNetClient(TCPsocket* socket, IPaddress* ip){
-    if (SDLNet_ResolveHost(ip, "localhost", 3005) != 0) {
+int InitNetClient(TCPsocket* socket, IPaddress* ip, const char* ipAddress){
+    if (SDLNet_ResolveHost(ip, ipAddress, 3005) != 0) {
         fprintf(stderr, "SDLNet_ResolveHost: %s\n", SDLNet_GetError());
-        exit(1);
+        return 1;
     }
     *socket = SDLNet_TCP_Open(ip);
     if (!*socket) {
         fprintf(stderr, "SDLNet_TCP_Open: %s\n", SDLNet_GetError());
-        exit(2);
+        return 2;
     }
+    return 0;
 }
 
 void InitSocketSet(SDLNet_SocketSet* socketSet, TCPsocket* toAdd, int maxsockets){

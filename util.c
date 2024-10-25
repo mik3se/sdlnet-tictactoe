@@ -9,7 +9,7 @@ void StripUsernameC(char* copyTo, const char* data){
             copyTo[j] = 0;
             break;
         }
-        else if((data[i] >= '0' && data[i] <= '9') || (data[i] >= 'A' && data[i] <= 'Z') || (data[i] >= 'a' && data[i] <= 'z') || data[i] == '_'){
+        else if((data[i] >= '0' && data[i] <= '9') || (data[i] >= 'A' && data[i] <= 'Z') || (data[i] >= 'a' && data[i] <= 'z') || data[i] == '_' || data[i] == '.'){
             copyTo[j] = data[i];
             j++;
         }
@@ -22,7 +22,7 @@ void StripUsernameE(char* data){
             data[j] = 0;
             break;
         }
-        else if((data[i] >= '0' && data[i] <= '9') || (data[i] >= 'A' && data[i] <= 'Z') || (data[i] >= 'a' && data[i] <= 'z') || data[i] == '_'){
+        else if((data[i] >= '0' && data[i] <= '9') || (data[i] >= 'A' && data[i] <= 'Z') || (data[i] >= 'a' && data[i] <= 'z') || data[i] == '_' || data[i] == '.'){
             data[j] = data[i];
             j++;
         }

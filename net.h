@@ -14,7 +14,7 @@ typedef struct {
 }Client;
 
 void InitSDLNet();
-void InitNetClient(TCPsocket* socket, IPaddress* ip);
+int InitNetClient(TCPsocket* socket, IPaddress* ip, const char* ipAddress);
 void InitSocketSet(SDLNet_SocketSet* socketSet, TCPsocket* toAdd, int maxsockets);
 void CloseNetClient(TCPsocket* socket);
 void QuitSDLNet();

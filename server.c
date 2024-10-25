@@ -24,7 +24,7 @@ int main(){
     InitSocketSet(&socketSet, &serverSocket, MAX_SOCKETS + 1);
 
     while(!shouldQuit){
-        readyCount = SDLNet_CheckSockets(socketSet, 0);
+        readyCount = SDLNet_CheckSockets(socketSet, 50);
         if(readyCount > 0){
             for(int i = 0; i < MAX_SOCKETS; i++){
                 if(SDLNet_SocketReady(clientArray[i].socket)){
@@ -51,7 +51,7 @@ int main(){
                             memset(buffer, 0, 256);
                             StringToPacket(clientArray[i].username, StringLength(clientArray[i].username, 64), buffer, 0, 256);
                             SendTPacket(clientArray[i].socket, buffer, StringLength(clientArray[i].username, 64) + 1, 0x00);
-                            printf("Sent a packet: %s\n", clientArray[i].username);
+                            printf("Sent username: %s\n", clientArray[i].username);
                             clientArray[i].ready = true;
                         }
                         else if(gameState == 1){
