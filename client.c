@@ -162,7 +162,7 @@ int main() {
             }
         }
 
-        DrawText(TextFormat("%d",GetFPS()), 10, 10, 20, GRAY);
+        //DrawText(TextFormat("%d",GetFPS()), 10, 10, 20, GRAY);
 
         EndDrawing();
     }
